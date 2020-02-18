@@ -19,6 +19,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/professors', db.getAllProfessors);
+app.post('/professors', db.addProfessor);
 
 app.listen(port, () => {
     console.log(`App running on port ${port}.`)
