@@ -20,6 +20,10 @@ app.get('/', (req, res) => {
 
 app.get('/professors', db.getAllProfessors);
 app.post('/professors', db.addProfessor);
+app.get('/professors/:id', db.getProfessorById);
+app.patch('/professors/:id', db.updateProfessorById);
+app.delete('/professors/:id', db.deleteProfessorById);
+
 
 app.listen(port, () => {
     console.log(`App running on port ${port}.`)
