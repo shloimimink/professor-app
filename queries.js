@@ -21,11 +21,19 @@ const getAllProfessors = (req, res) => {
 const getProfessorById = (req, res) => {
     const id = parseInt(req.params.id);
 
-    pool.query('SELECT * FROM professors WHERE id = $1', [id], (err, results) => {
+    pool.query('SELECT * FROM professors WHERE id = $1', [id], (err, professorResults) => {
         if (err) {
             throw err
         }
-        res.status(200).json(results.rows)
+        pool.query('SELECT * FROM reviews WHERE professor_id = $1', [id], (err, reviewsResults) => {
+            if (err) {
+                throw err
+            }
+            const professor = professorResults.rows[0];
+            professor.reviews = reviewsResults.rows;
+            res.status(200).json(professor)
+        })
+        
     })
 };
 
@@ -69,10 +77,88 @@ const deleteProfessorById = (req, res) => {
     })
 };
 
+// INDEX REVIEWS
+const allReviews = (req, res) => {
+    pool.query('SELECT * FROM reviews', (err, results) => {
+        if (err) {
+            throw err
+        }
+        res.status(200).json(results.rows)
+    })
+}
+
+// SHOW PROFESSOR REVIEWS
+const getProfessorReviews = (req, res) => {
+    const id = parseInt(req.params.id);
+
+    pool.query(`
+        SELECT * 
+        FROM reviews 
+        WHERE id = ${id}
+    `, (err, results) => {
+        if (err) {
+            console.log(err);
+        }
+        const review = results.rows[0];
+        pool.query('SELECT * FROM professors WHERE id = $1', [review.professor_id], (err, professorResults) => {
+            if (err) {
+                throw err
+            }
+            review.professor = professorResults.rows[0]
+            res.status(200).json(review)
+        })
+    })
+}
+
+// CREATE REVIEW
+const createReview = (req, res) => {
+    const {rating, text, professor_id} = req.body;
+
+    pool.query('INSERT INTO reviews (rating, text, professor_id)' +
+        ' VALUES ($1, $2, $3) RETURNING id', [rating, text, professor_id], (err, result) => {
+        if (err) {
+            throw err
+        }
+        console.log(result);
+        res.status(201).send(result.body)
+    })
+}
+
+// UPDATE REVIEW
+const updateReview = (req, res) => {
+    const id = parseInt(req.params.id);
+    const {rating, text, professor_id} = req.body;
+
+    pool.query('UPDATE reviews SET rating = $1, text = $2, professor_id = $3 WHERE id = $4' +
+        ' RETURNING id', [rating, text, professor_id, id], (err, result) => {
+        if (err) {
+            throw err
+        }
+        res.status(200).json(result.rows[0])
+    })
+}
+
+// DELETE REVIEW
+const deleteReview = (req, res) => {
+    const id = parseInt(req.params.id);
+
+    pool.query('DELETE FROM reviews WHERE id = $1', [id], (err) => {
+        if (err) {
+            throw err
+        }
+        res.status(200).json(`Review deleted with ID: ${id}`)
+    })
+}
+
 module.exports = {
     getAllProfessors,
     addProfessor,
     getProfessorById,
     updateProfessorById,
-    deleteProfessorById
+    deleteProfessorById,
+    allReviews,
+    getProfessorReviews,
+    createReview,
+    updateReview,
+    deleteReview
 };
